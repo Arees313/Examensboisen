@@ -122,6 +122,7 @@ if response.status_code == 200:
         total_volume = coin['total_volume']
         circulating_supply = circulating_supply if circulating_supply is not None else None
         max_supply = max_supply if max_supply is not None else None
+        price_change_24h = coin['price_change_24h']
         # Insert into Cryptocurrencies table
         try:
             connection = mysql.connector.connect(
@@ -149,7 +150,7 @@ if response.status_code == 200:
             # Commit the changes
             connection.commit()
 
-            #print(f"{index}. Name:{Style.BRIGHT} {name}{Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%")
+            print(f"{index}. Name:{Style.BRIGHT} {name}{Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%, {price_change_24h}")
 
         except Error as e:
             print(f"Error inserting data: {e}")
