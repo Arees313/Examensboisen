@@ -51,8 +51,7 @@ create_tables_queries = [
         date DATETIME,
         price DECIMAL(18,8),
         volume INT,
-        FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id),
-        UNIQUE (cryptocurrency_id, date)
+        FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id)
     );
     """,
     """
@@ -61,7 +60,7 @@ create_tables_queries = [
         base_currency_id INT,
         quote_currency_id INT,
         current_price DECIMAL(18,8),
-        volume_24h INT,
+        volume_24h BIGINT,
         FOREIGN KEY (base_currency_id) REFERENCES Cryptocurrencies(cryptocurrency_id),
         FOREIGN KEY (quote_currency_id) REFERENCES Cryptocurrencies(cryptocurrency_id)
     );
@@ -138,31 +137,25 @@ if response.status_code == 200:
             )
             cursor = connection.cursor()
 
+            # Insert into Cryptocurrencies table
             cursor.execute("""
             INSERT INTO Cryptocurrencies (name, symbol, max_supply, circulating_supply)
             VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE max_supply=VALUES(max_supply), circulating_supply=VALUES(circulating_supply)
             """, (name, symbol, max_supply, circulating_supply))
 
             # Get the ID of the newly inserted or updated cryptocurrency
             cryptocurrency_id = cursor.lastrowid
 
-            # Insert into MarketData (Current Data)
+            # Insert data into MarketData table
             cursor.execute("""
             INSERT INTO MarketData (cryptocurrency_id, date, current_price, price_change_24h, price_change_percentage_24h, total_volume)
             VALUES (%s, NOW(), %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE current_price=VALUES(current_price), price_change_24h=VALUES(price_change_24h), price_change_percentage_24h=VALUES(price_change_percentage_24h), total_volume=VALUES(total_volume)
-            """, (cryptocurrency_id, current_price, price_change_24h, price_change_percentage_24h, total_volume))
-
-            # Insert into HistoricalPrices (Only for new historical data)
-            cursor.execute("""
-            INSERT INTO HistoricalPrices (cryptocurrency_id, date, price, volume)
-            VALUES (%s, NOW(), %s, %s)
-            ON DUPLICATE KEY UPDATE price=VALUES(price), volume=VALUES(volume)
-            """, (cryptocurrency_id, current_price, total_volume))
+            """, (cryptocurrency_id, current_price, coin['price_change_24h'], price_change_percentage_24h, total_volume))
 
             # Commit the changes
             connection.commit()
+
+            print(f"{index}. Name:{Style.BRIGHT} {name}{Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%, {price_change_24h}")
 
         except Error as e:
             print(f"Error inserting data: {e}")
