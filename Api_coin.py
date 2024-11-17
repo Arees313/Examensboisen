@@ -8,8 +8,8 @@ from colorama import Fore, Style
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
 user = "root"       # Your MySQL username
-password = "Example123!" # Your MySQL password
-db_name = "examens_krypto"  # Name of the database you want to check/create
+password = "password123" # Your MySQL password
+db_name = "kryptoDB"  # Name of the database you want to check/create
 
 # Function to get the current price (used for sorting)
 def get_current_price(coin):
@@ -18,6 +18,7 @@ def get_current_price(coin):
 # Fetch data from the API
 url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd"
 response = requests.get(url)
+
 # SQL queries to create the tables if they do not exist
 create_tables_queries = [
     """
@@ -26,7 +27,8 @@ create_tables_queries = [
         name VARCHAR(255) NOT NULL,
         symbol VARCHAR(10) NOT NULL,
         max_supply BIGINT,
-        circulating_supply BIGINT
+        circulating_supply BIGINT,
+        UNIQUE (name, symbol)
     );
     """,
     """
@@ -38,7 +40,8 @@ create_tables_queries = [
         price_change_24h DECIMAL(18,8),
         price_change_percentage_24h DECIMAL(5,2),
         total_volume BIGINT,
-        FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id)
+        FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id),
+        UNIQUE (cryptocurrency_id, date)
     );
     """,
     """
@@ -48,7 +51,8 @@ create_tables_queries = [
         date DATETIME,
         price DECIMAL(18,8),
         volume INT,
-        FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id)
+        FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id),
+        UNIQUE (cryptocurrency_id, date)
     );
     """,
     """
@@ -98,19 +102,19 @@ except Error as e:
 
 finally:
     # Close the connection if it's open
-    if connection.is_connected():
-        cursor.close()
-        connection.close()
+    try:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+    except NameError:
+        pass  # Om connection inte är definierad, gör ingenting
+
 
 # Process the API response and insert data into MySQL
 if response.status_code == 200:
     coins = response.json()
     # Sort coins in descending order
     sorted_coins = sorted(coins, key=get_current_price, reverse=True)
-
-    # # Clear the screen (for Unix/Linux or Windows)
-    # os.system('cls' if os.name == 'nt' else 'clear')
-    #print("Cryptocurrencies sorted by current price (descending):")
 
     for index, coin in enumerate(sorted_coins, start=1):
         name = coin['name']
@@ -123,7 +127,8 @@ if response.status_code == 200:
         circulating_supply = circulating_supply if circulating_supply is not None else None
         max_supply = max_supply if max_supply is not None else None
         price_change_24h = coin['price_change_24h']
-        # Insert into Cryptocurrencies table
+        
+        # Insert into Cryptocurrencies table (Check if already exists)
         try:
             connection = mysql.connector.connect(
                 host=host,
@@ -136,21 +141,28 @@ if response.status_code == 200:
             cursor.execute("""
             INSERT INTO Cryptocurrencies (name, symbol, max_supply, circulating_supply)
             VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE max_supply=VALUES(max_supply), circulating_supply=VALUES(circulating_supply)
             """, (name, symbol, max_supply, circulating_supply))
 
-            # Get the ID of the newly inserted cryptocurrency
+            # Get the ID of the newly inserted or updated cryptocurrency
             cryptocurrency_id = cursor.lastrowid
 
-            # Insert data into MarketData table
+            # Insert into MarketData (Current Data)
             cursor.execute("""
             INSERT INTO MarketData (cryptocurrency_id, date, current_price, price_change_24h, price_change_percentage_24h, total_volume)
             VALUES (%s, NOW(), %s, %s, %s, %s)
-            """, (cryptocurrency_id, current_price, coin['price_change_24h'], price_change_percentage_24h, total_volume))
+            ON DUPLICATE KEY UPDATE current_price=VALUES(current_price), price_change_24h=VALUES(price_change_24h), price_change_percentage_24h=VALUES(price_change_percentage_24h), total_volume=VALUES(total_volume)
+            """, (cryptocurrency_id, current_price, price_change_24h, price_change_percentage_24h, total_volume))
+
+            # Insert into HistoricalPrices (Only for new historical data)
+            cursor.execute("""
+            INSERT INTO HistoricalPrices (cryptocurrency_id, date, price, volume)
+            VALUES (%s, NOW(), %s, %s)
+            ON DUPLICATE KEY UPDATE price=VALUES(price), volume=VALUES(volume)
+            """, (cryptocurrency_id, current_price, total_volume))
 
             # Commit the changes
             connection.commit()
-
-            print(f"{index}. Name:{Style.BRIGHT} {name}{Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%, {price_change_24h}")
 
         except Error as e:
             print(f"Error inserting data: {e}")
