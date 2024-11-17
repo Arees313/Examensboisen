@@ -2,8 +2,9 @@ import requests
 import os
 from time import sleep
 from colorama import Fore, Style
-from sqlcode import sql_code
-print(sql_code)
+import mysql.connector
+from mysql.connector import Error
+
 # Function to get the current price (used for sorting)
 def get_current_price(coin):
     return coin['current_price']
@@ -12,13 +13,11 @@ def get_current_price(coin):
 url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd"
 response = requests.get(url)
 
-import mysql.connector
-from mysql.connector import Error
 
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
 user = "root"       # Your MySQL username
-password = def_sql_code # Your MySQL password
+password = "Arees123!" # Your MySQL password
 db_name = "examens_krypto"  # Name of the database you want to check/create
 
 # Connect to MySQL
@@ -56,8 +55,8 @@ if response.status_code == 200:
     coins = response.json()
     # Sort coins in descending order
     sorted_coins = sorted(coins, key=get_current_price, reverse=True)
-        # Clear the screen (for Unix/Linux or Windows)
-    os.system('cls' if os.name == 'nt' else 'clear')
+    #     # Clear the screen (for Unix/Linux or Windows)
+    # os.system('cls' if os.name == 'nt' else 'clear')
     print("Cryptocurrencies sorted by current price (descending):")
 
     for index, coin in enumerate(sorted_coins, start=1):
@@ -78,7 +77,7 @@ if response.status_code == 200:
         else:
             price_change_procentage_24h = f"{Fore.RED}{price_change_procentage_24h}%{Style.RESET_ALL}"
 
-        print(f"{index}. Name:{Style.BRIGHT} {name}{Style.RESET_ALL}, Price: ${current_price} USD, Volume: {total_volume}, Max Available: {max_supply}, Circulating Supply: {circulating_supply}, 24h Change: {price_change_procentage_24h}, 24h change in USD: {prince_change_USD_24h}, {symbol}, {market_cap} USD ")
+        #print(f"{index}. Name:{Style.BRIGHT} {name}{Style.RESET_ALL}, Price: ${current_price} USD, Volume: {total_volume}, Max Available: {max_supply}, Circulating Supply: {circulating_supply}, 24h Change: {price_change_procentage_24h}, 24h change in USD: {prince_change_USD_24h}, {symbol}, {market_cap} USD ")
         
 else:
     print(f"Error: {response.status_code}")
