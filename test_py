@@ -8,8 +8,8 @@ from colorama import Fore, Style
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
 user = "root"       # Your MySQL username
-password = "Example123!" # Your MySQL password
-db_name = "examens_db"  # Name of the database you want to check/create
+password = "password123" # Your MySQL password
+db_name = "kryptoDB"  # Name of the database you want to check/create
 
 # Function to get the current price (used for sorting)
 def get_current_price(coin):
