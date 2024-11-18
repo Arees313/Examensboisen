@@ -3,7 +3,7 @@ from mysql.connector import Error
 import requests
 import os
 from colorama import Fore, Style
-
+import time
 
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
@@ -155,18 +155,13 @@ if response.status_code == 200:
             # Insert or update MarketData
             cursor.execute("""
                 SELECT marketdata_id FROM MarketData
-                WHERE cryptocurrency_id = %s AND date = NOW()
-            """, (cryptocurrency_id,))
+                WHERE cryptocurrency_id = %s AND current_price = %s
+            """, (cryptocurrency_id, current_price))
             existing_data = cursor.fetchone()
 
             if existing_data:
                 # Update existing market data
-                cursor.execute("""
-                    UPDATE MarketData
-                    SET current_price = %s, price_change_24h = %s, 
-                        price_change_percentage_24h = %s, total_volume = %s
-                    WHERE marketdata_id = %s
-                """, (current_price, price_change_24h, price_change_percentage_24h, total_volume, existing_data[0]))
+                print("no new marketdata..")
             else:
                 # Insert new market data
                 cursor.execute("""
@@ -174,7 +169,8 @@ if response.status_code == 200:
                     price_change_24h, price_change_percentage_24h, total_volume)
                     VALUES (%s, NOW(), %s, %s, %s, %s)
                 """, (cryptocurrency_id, current_price, price_change_24h, price_change_percentage_24h, total_volume))
-
+                print("new market data..")
+            cursor.fetchall()
             # Check if a record with the same price already exists for the cryptocurrency
             cursor.execute("""
                 SELECT historicalprices_id FROM HistoricalPrices
@@ -194,6 +190,15 @@ if response.status_code == 200:
                     VALUES (%s, NOW(), %s, %s)
                 """, (cryptocurrency_id, current_price, total_volume))
                 print("New data inserted.")
+
+            # Make sure to fetch all results from any remaining queries
+            cursor.fetchall()  # This line ensures that any unread results are consumed.
+
+            # Commit the changes
+            connection.commit()
+
+#rint(f"{index}. Name: {Style.BRIGHT} {name} {Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%, {price_change_24h} {total_volume}")
+
 
             # Insert or update Tradepair
             cursor.execute("""
@@ -227,6 +232,5 @@ if response.status_code == 200:
             if connection.is_connected():
                 cursor.close()
                 connection.close()
-
 else:
     print(f"Error: {response.status_code}")
