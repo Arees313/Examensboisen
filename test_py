@@ -8,8 +8,8 @@ import time
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
 user = "root"       # Your MySQL username
-password = "password123" # Your MySQL password
-db_name = "kryptoDB"  # Name of the database you want to check/create
+password = "Example123!" # Your MySQL password
+db_name = "examens_db"  # Name of the database you want to check/create
 
 # Function to get the current price (used for sorting)
 def get_current_price(coin):
@@ -157,20 +157,16 @@ def fetch_and_store_data():
                 # Insert or update MarketData
                 cursor.execute("""
                     SELECT marketdata_id FROM MarketData
-                    WHERE cryptocurrency_id = %s AND date = NOW()
-                """, (cryptocurrency_id,))
+                    WHERE cryptocurrency_id = %s AND current_price = %s
+                """, (cryptocurrency_id, current_price))
                 existing_data = cursor.fetchone()
 
                 if existing_data:
                     # Update existing market data
-                    cursor.execute("""
-                        UPDATE MarketData
-                        SET current_price = %s, price_change_24h = %s, 
-                            price_change_percentage_24h = %s, total_volume = %s
-                        WHERE marketdata_id = %s
-                    """, (current_price, price_change_24h, price_change_percentage_24h, total_volume, existing_data[0]))
+                    print("No new data for marketdata")
                 else:
                     # Insert new market data
+                    print("new data into marketdata")
                     cursor.execute("""
                         INSERT INTO MarketData (cryptocurrency_id, date, current_price, 
                         price_change_24h, price_change_percentage_24h, total_volume)
@@ -188,7 +184,7 @@ def fetch_and_store_data():
 
                 if existing_historical:
                     # If the price is the same, do nothing (no insert or update).
-                    print("No new data. Price is the same.")
+                    print("No new data for historicalprices")
                 else:
                     # If price is different, insert a new row.
                     cursor.execute("""
@@ -237,4 +233,4 @@ while True:
     print("Waiting for the next data collection...")
     
     # Pausa i 30 minuter (1800 sekunder)
-    time.sleep(1800)
+    time.sleep(900)
