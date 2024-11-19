@@ -8,8 +8,8 @@ from colorama import Fore, Style
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
 user = "root"       # Your MySQL username
-password = "password123" # Your MySQL password
-db_name = "kryptoDB"  # Name of the database you want to check/create
+password = "Example123!" # Your MySQL password
+db_name = "examens_db"  # Name of the database you want to check/create
 
 # Function to get the current price (used for sorting)
 def get_current_price(coin):
@@ -220,7 +220,7 @@ if response.status_code == 200:
             # Commit the changes
             connection.commit()
 
-            print(f"{index}. Name: {Style.BRIGHT} {name} {Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%, {price_change_24h} {total_volume}")
+            #print(f"{index}. Name: {Style.BRIGHT} {name} {Style.RESET_ALL}, Symbol: {symbol}, Price: ${current_price} USD, 24h Change: {price_change_percentage_24h}%, {price_change_24h} {total_volume}")
 
         except Error as e:
             print(f"Error inserting data: {e}")
