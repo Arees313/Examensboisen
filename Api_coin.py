@@ -3,7 +3,7 @@ from mysql.connector import Error
 import requests
 import os
 from colorama import Fore, Style
-import time
+
 
 # Database connection details
 host = "localhost"  # Or your host (e.g., IP address or domain)
