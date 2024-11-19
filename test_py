@@ -145,7 +145,7 @@ if response.status_code == 200:
                     WHERE cryptocurrency_id = %s
                 """, (max_supply, circulating_supply, cryptocurrency_id))
             else:
-                # Insert new cryptocurrency
+                # Insert new cryptocurrencym
                 cursor.execute("""
                     INSERT INTO Cryptocurrencies (name, symbol, max_supply, circulating_supply)
                     VALUES (%s, %s, %s, %s)
