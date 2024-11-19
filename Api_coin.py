@@ -129,30 +129,16 @@ if response.status_code == 200:
             )
             cursor = connection.cursor()
 
-            # Check if cryptocurrency already exists
+            # Insert into Cryptocurrencies table
             cursor.execute("""
-                SELECT cryptocurrency_id FROM Cryptocurrencies
-                WHERE name = %s AND symbol = %s
-            """, (name, symbol))
-            existing_cryptocurrency = cursor.fetchone()
+                INSERT INTO Cryptocurrencies (name, symbol, max_supply, circulating_supply)
+                VALUES (%s, %s, %s, %s)
+            """, (name, symbol, max_supply, circulating_supply))
 
-            if existing_cryptocurrency:
-                # Update existing cryptocurrency
-                cryptocurrency_id = existing_cryptocurrency[0]
-                cursor.execute("""
-                    UPDATE Cryptocurrencies
-                    SET max_supply = %s, circulating_supply = %s
-                    WHERE cryptocurrency_id = %s
-                """, (max_supply, circulating_supply, cryptocurrency_id))
-            else:
-                # Insert new cryptocurrency
-                cursor.execute("""
-                    INSERT INTO Cryptocurrencies (name, symbol, max_supply, circulating_supply)
-                    VALUES (%s, %s, %s, %s)
-                """, (name, symbol, max_supply, circulating_supply))
-                cryptocurrency_id = cursor.lastrowid
-            cursor.fetchall()
-            # Insert or update MarketData
+            # Get the ID of the newly inserted cryptocurrency
+            cryptocurrency_id = cursor.lastrowid
+
+            # Insert into Tradepair table - assuming the same cryptocurrency is used for both base and quote currencies (for simplicity)
             cursor.execute("""
                 SELECT marketdata_id FROM MarketData
                 WHERE cryptocurrency_id = %s AND current_price = %s

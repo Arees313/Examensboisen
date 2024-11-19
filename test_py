@@ -175,26 +175,25 @@ if response.status_code == 200:
                     VALUES (%s, NOW(), %s, %s, %s, %s)
                 """, (cryptocurrency_id, current_price, price_change_24h, price_change_percentage_24h, total_volume))
 
-            # Insert or update HistoricalPrices
+            # Check if a record with the same price already exists for the cryptocurrency
             cursor.execute("""
                 SELECT historicalprices_id FROM HistoricalPrices
-                WHERE cryptocurrency_id = %s AND date = NOW()
-            """, (cryptocurrency_id,))
+                WHERE cryptocurrency_id = %s AND price = %s
+            """, (cryptocurrency_id, current_price))
+
+            # Fetch existing record, if any
             existing_historical = cursor.fetchone()
 
             if existing_historical:
-                # Update existing historical price
-                cursor.execute("""
-                    UPDATE HistoricalPrices
-                    SET price = %s, volume = %s
-                    WHERE historicalprices_id = %s
-                """, (current_price, total_volume, existing_historical[0]))
+                # If the price is the same, do nothing (no insert or update).
+                print("No new data. Price is the same.")
             else:
-                # Insert new historical price
+                # If price is different, insert a new row.
                 cursor.execute("""
                     INSERT INTO HistoricalPrices (cryptocurrency_id, date, price, volume)
                     VALUES (%s, NOW(), %s, %s)
                 """, (cryptocurrency_id, current_price, total_volume))
+                print("New data inserted.")
 
             # Insert or update Tradepair
             cursor.execute("""
