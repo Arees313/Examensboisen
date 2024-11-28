@@ -37,9 +37,12 @@ def fetch_and_store_data():
             cryptocurrency_id INT,
             date DATETIME,
             current_price DECIMAL(18,8),
-            price_change_24h DECIMAL(18,8),
-            price_change_percentage_24h DECIMAL(5,2),
+            current_price_change_24h DECIMAL(18,8),
+            current_price_change_percentage_24h DECIMAL(5,2),
             total_volume BIGINT,
+            market_cap BIGINT,
+            market_cap_change_24h DECIMAL(18,2),
+            market_cap_change_percentage_24h DECIMAL(5,2),
             FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id)
         );
         """,
@@ -50,6 +53,11 @@ def fetch_and_store_data():
             date DATETIME,
             price DECIMAL(18,8),
             volume BIGINT,
+            price_change DECIMAL(18,8),
+            percentage_change DECIMAL(5,2),
+            market_cap BIGINT,
+            market_cap_change_24h DECIMAL(18,2),
+            market_cap_change_percentage_24h DECIMAL(5,2),
             FOREIGN KEY (cryptocurrency_id) REFERENCES Cryptocurrencies(cryptocurrency_id)
         );
         """,
@@ -116,12 +124,14 @@ def fetch_and_store_data():
             max_supply = coin.get('max_supply', 'N/A')
             circulating_supply = coin.get('circulating_supply', 'N/A')
             current_price = coin['current_price']
-            price_change_percentage_24h = coin['price_change_percentage_24h']
+            current_price_change_percentage_24h = coin['price_change_percentage_24h']
             total_volume = coin['total_volume']
             circulating_supply = circulating_supply if circulating_supply is not None else None
             max_supply = max_supply if max_supply is not None else None
-            price_change_24h = coin['price_change_24h']
-
+            current_price_change_24h = coin['price_change_24h']
+            market_cap_change_24h = coin['market_cap_change_24h']
+            market_cap_change_percentage_24h = coin['market_cap_change_percentage_24h']
+            market_cap = coin['market_cap'] 
             try:
                 connection = mysql.connector.connect(
                     host=host,
@@ -161,17 +171,37 @@ def fetch_and_store_data():
                 """, (cryptocurrency_id, current_price))
                 existing_data = cursor.fetchone()
 
+                # Check if any data exists for the cryptocurrency_id
+                cursor.execute("""
+                    SELECT marketdata_id FROM MarketData
+                    WHERE cryptocurrency_id = %s
+                """, (cryptocurrency_id,))
+                existing_data = cursor.fetchone()
+
                 if existing_data:
-                    # Update existing market data
-                    print("No new data for marketdata")
+                    # If data exists, update the existing record
+                    print("Updating existing data for marketdata...")
+                    cursor.execute("""
+                        UPDATE MarketData
+                        SET current_price = %s, 
+                            current_price_change_24h = %s,
+                            current_price_change_percentage_24h = %s,
+                            total_volume = %s,
+                            market_cap = %s,
+                            market_cap_change_24h = %s,
+                            market_cap_change_percentage_24h = %s
+                        WHERE marketdata_id = %s
+                    """, (current_price, current_price_change_24h, current_price_change_percentage_24h, total_volume, 
+                          market_cap, market_cap_change_24h, market_cap_change_percentage_24h, existing_data[0]))
                 else:
-                    # Insert new market data
-                    print("new data into marketdata")
+                    # If no data exists at all for this cryptocurrency_id, insert a new row
+                    print("Inserting new data into marketdata...")
                     cursor.execute("""
                         INSERT INTO MarketData (cryptocurrency_id, date, current_price, 
-                        price_change_24h, price_change_percentage_24h, total_volume)
-                        VALUES (%s, NOW(), %s, %s, %s, %s)
-                    """, (cryptocurrency_id, current_price, price_change_24h, price_change_percentage_24h, total_volume))
+                        current_price_change_24h, current_price_change_percentage_24h, total_volume, market_cap, market_cap_change_24h, market_cap_change_percentage_24h)
+                        VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+                    """, (cryptocurrency_id, current_price, current_price_change_24h, current_price_change_percentage_24h, total_volume, market_cap, market_cap_change_24h, market_cap_change_percentage_24h))
+
 
                 # Check if a record with the same price already exists for the cryptocurrency
                 cursor.execute("""
@@ -188,10 +218,10 @@ def fetch_and_store_data():
                 else:
                     # If price is different, insert a new row.
                     cursor.execute("""
-                        INSERT INTO HistoricalPrices (cryptocurrency_id, date, price, volume)
-                        VALUES (%s, NOW(), %s, %s)
-                    """, (cryptocurrency_id, current_price, total_volume))
-                    print("New data inserted.")
+                        INSERT INTO HistoricalPrices (cryptocurrency_id, date, price, volume, price_change, percentage_change, market_cap, market_cap_change_24h, market_cap_change_percentage_24h )
+                        VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+                    """, (cryptocurrency_id, current_price, total_volume, current_price_change_24h, current_price_change_percentage_24h, market_cap, market_cap_change_24h, market_cap_change_percentage_24h))
+                    print("New data inserted-------------------------.")
 
                 # Insert or update Tradepair
                 cursor.execute("""
@@ -229,8 +259,8 @@ def fetch_and_store_data():
 
 # Oändlig loop för att köra koden var 30:e minut
 while True:
-    fetch_and_store_data()  # Kör din funktion för att hämta och lagra data
+    fetch_and_store_data()  #funktion för att hämta och lagra data
     print("Waiting for the next data collection...")
     
     # Pausa i 30 minuter (1800 sekunder)
-    time.sleep(900)
+    time.sleep(300)
