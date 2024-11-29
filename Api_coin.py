@@ -164,12 +164,7 @@ def fetch_and_store_data():
                     """, (name, symbol, max_supply, circulating_supply))
                     cryptocurrency_id = cursor.lastrowid
 
-                # Insert or update MarketData
-                cursor.execute("""
-                    SELECT marketdata_id FROM MarketData
-                    WHERE cryptocurrency_id = %s AND current_price = %s
-                """, (cryptocurrency_id, current_price))
-                existing_data = cursor.fetchone()
+
 
                 # Check if any data exists for the cryptocurrency_id
                 cursor.execute("""
@@ -183,7 +178,9 @@ def fetch_and_store_data():
                     print("Updating existing data for marketdata...")
                     cursor.execute("""
                         UPDATE MarketData
-                        SET current_price = %s, 
+                        SET 
+                            date = NOW(),
+                            current_price = %s, 
                             current_price_change_24h = %s,
                             current_price_change_percentage_24h = %s,
                             total_volume = %s,
@@ -192,7 +189,8 @@ def fetch_and_store_data():
                             market_cap_change_percentage_24h = %s
                         WHERE marketdata_id = %s
                     """, (current_price, current_price_change_24h, current_price_change_percentage_24h, total_volume, 
-                          market_cap, market_cap_change_24h, market_cap_change_percentage_24h, existing_data[0]))
+                        market_cap, market_cap_change_24h, market_cap_change_percentage_24h, existing_data[0]))
+
                 else:
                     # If no data exists at all for this cryptocurrency_id, insert a new row
                     print("Inserting new data into marketdata...")
@@ -203,25 +201,23 @@ def fetch_and_store_data():
                     """, (cryptocurrency_id, current_price, current_price_change_24h, current_price_change_percentage_24h, total_volume, market_cap, market_cap_change_24h, market_cap_change_percentage_24h))
 
 
-                # Check if a record with the same price already exists for the cryptocurrency
-                cursor.execute("""
-                    SELECT historicalprices_id FROM HistoricalPrices
-                    WHERE cryptocurrency_id = %s AND price = %s
-                """, (cryptocurrency_id, current_price))
-
-                # Fetch existing record, if any
-                existing_historical = cursor.fetchone()
-
-                if existing_historical:
-                    # If the price is the same, do nothing (no insert or update).
-                    print("No new data for historicalprices")
-                else:
-                    # If price is different, insert a new row.
+                # Insert new data into HistoricalPrices without checking for existing records
+                try:
                     cursor.execute("""
-                        INSERT INTO HistoricalPrices (cryptocurrency_id, date, price, volume, price_change, percentage_change, market_cap, market_cap_change_24h, market_cap_change_percentage_24h )
-                        VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
-                    """, (cryptocurrency_id, current_price, total_volume, current_price_change_24h, current_price_change_percentage_24h, market_cap, market_cap_change_24h, market_cap_change_percentage_24h))
-                    print("New data inserted-------------------------.")
+                        INSERT INTO HistoricalPrices (
+                            cryptocurrency_id, date, price, volume, price_change, 
+                            percentage_change, market_cap, market_cap_change_24h, market_cap_change_percentage_24h
+                        ) VALUES (%s, NOW(), %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        cryptocurrency_id, current_price, total_volume, 
+                        current_price_change_24h, current_price_change_percentage_24h, 
+                        market_cap, market_cap_change_24h, market_cap_change_percentage_24h
+                    ))
+                    print("New data inserted into HistoricalPrices.")
+                except Error as e:
+                    print(f"Error inserting data into HistoricalPrices: {e}")
+
+
 
                 # Insert or update Tradepair
                 cursor.execute("""
@@ -263,4 +259,4 @@ while True:
     print("Waiting for the next data collection...")
     
     # Pausa i 30 minuter (1800 sekunder)
-    time.sleep(300)
+    time.sleep(1800)
