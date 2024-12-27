@@ -259,4 +259,4 @@ while True:
     print("Waiting for the next data collection...")
     
     # Pausa i 30 minuter (1800 sekunder)
-    time.sleep(1800)
+    time.sleep(900)
