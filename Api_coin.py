@@ -201,7 +201,7 @@ def fetch_and_store_data():
                     """, (cryptocurrency_id, current_price, current_price_change_24h, current_price_change_percentage_24h, total_volume, market_cap, market_cap_change_24h, market_cap_change_percentage_24h))
 
 
-                # Insert new data into HistoricalPrices without checking for existing records
+                # Insert new data into HistoricalPrices without checking for existing records.
                 try:
                     cursor.execute("""
                         INSERT INTO HistoricalPrices (
